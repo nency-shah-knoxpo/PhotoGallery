@@ -21,6 +21,17 @@ public class FlickerFetcher {
 
     private static final String API_KEY = "cf833c5c2fd6f0dfc6d5c30b20da7eb8";
 
+
+    static final String FETCH_RECENTS_METHOD = "flickr.photos.getRecent";
+    static final String SEARCH_METHOD = "flickr.photos.search";
+    static final Uri ENDPOINT = Uri.parse("https://api.flickr.com/services/rest/")
+            .buildUpon()
+            .appendQueryParameter("api_key", API_KEY)
+            .appendQueryParameter("format", "json")
+            .appendQueryParameter("nojsoncallback", "1")
+            .appendQueryParameter("extras", "url_s")
+            .build();
+
     //returns raw data from url and returns it as a array of bytes
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
@@ -50,17 +61,36 @@ public class FlickerFetcher {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public List<GalleryItem> fetchItems() {
+    private String buildUrl(String method, String query) {
+        Uri.Builder uriBuilder = ENDPOINT.buildUpon()
+                .appendQueryParameter("method", method);
+        if (method.equals(SEARCH_METHOD)) {
+            uriBuilder.appendQueryParameter("text", query);
+        }
+        return uriBuilder.build().toString();
+    }
+
+    public List<GalleryItem> fetchRecentPhotos() {
+        String url = buildUrl(FETCH_RECENTS_METHOD, null);
+        return downloadGalleryItems(url);
+    }
+
+    public List<GalleryItem> searchPhotos(String query) {
+        String url = buildUrl(SEARCH_METHOD, query);
+        return downloadGalleryItems(url);
+    }
+
+    public List<GalleryItem> downloadGalleryItems(String url) {
         List<GalleryItem> items = new ArrayList<>();
         try {
-            String url = Uri.parse("https://api.flickr.com/services/rest/")
+            /*String url = Uri.parse("https://api.flickr.com/services/rest/")
                     .buildUpon()
                     .appendQueryParameter("method", "flickr.photos.getRecent")
                     .appendQueryParameter("api_key", API_KEY)
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
                     .appendQueryParameter("extras", "url_s")
-                    .build().toString();
+                    .build().toString();*/
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);
             JSONObject jsonBody = new JSONObject(jsonString);
